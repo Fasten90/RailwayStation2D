@@ -1,6 +1,9 @@
 import pygame
 from pygame.locals import *
- 
+
+import sys
+
+
 pygame.init()
 vec = pygame.math.Vector2  # 2 for two dimensional
  
@@ -15,5 +18,14 @@ FramePerSec = pygame.time.Clock()
 displaysurface = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Game")
 
+
+
+#Game loop begins
+while True:
+    for event in pygame.event.get():
+        if event.type == QUIT:
+            pygame.quit()
+            sys.exit()
+    pygame.display.update()
 
 

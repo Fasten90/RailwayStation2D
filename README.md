@@ -4,5 +4,5 @@ Railway station game in 2D for my son
 
 # Useful tutorials
 - https://coderslegacy.com/python/pygame-platformer-game-development/
-
+- https://coderslegacy.com/python/python-pygame-tutorial/
 

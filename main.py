@@ -31,6 +31,7 @@ RED   = (255, 0, 0)
 GREEN = (0, 255, 0)
 BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
+DARK_GREY = (50, 50, 50)
 
 
 RAIL_TOP_Y = math.floor(HEIGHT/3)
@@ -47,7 +48,9 @@ if IS_FULL_SCREEN:
     DISPLAYSURF = pygame.display.set_mode((0,0),pygame.FULLSCREEN)
 else:
     DISPLAYSURF = pygame.display.set_mode((WIDTH,HEIGHT))
-DISPLAYSURF.fill(WHITE)
+
+BACKGROUND_COLOR = DARK_GREY  # TODO: Maybe in normal situation it should be WHITE ?
+DISPLAYSURF.fill(DARK_GREY)
 
 pygame.display.set_caption(CONFIG_GAME_NAME)
 
@@ -93,8 +96,8 @@ class Train(pygame.sprite.Sprite):
         surface.blit(self.image, self.rect) 
 
     def re_create(self):
-        self.rect.top = HIDE_Y
-        self.rect.center = (HIDE_X, HIDE_Y)
+        #self.rect.top = 0
+        self.rect.bottomleft =(0, RAIL_TOP_Y - TRAIN_MOVE_UPPER_Y)
 
 
 # random.randint(30, 370)
@@ -117,17 +120,30 @@ class Train(pygame.sprite.Sprite):
 background = Background()
 train_top = Train()
 
+def quit():
+    pygame.quit()
+    sys.exit()
 
-#Game loop begins
+
+# Game loop begins
 while True:
+    # Check events
     for event in pygame.event.get():
         if event.type == QUIT:
-            pygame.quit()
-            sys.exit()
+            quit()
+    pressed_keys = pygame.key.get_pressed()
+    if pressed_keys[K_ESCAPE]:
+        quit()
+
+    # Cheats
+    if pressed_keys[K_RIGHT]:
+        train_top.re_create()
+
+    # Normal things
     background.update()
     train_top.move()
 
-    DISPLAYSURF.fill(WHITE)
+    DISPLAYSURF.fill(DARK_GREY)
     background.draw(DISPLAYSURF)
     train_top.draw(DISPLAYSURF)
 

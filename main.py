@@ -59,19 +59,24 @@ pygame.display.set_caption(CONFIG_GAME_NAME)
 class Background(pygame.sprite.Sprite):
     def __init__(self):
         super().__init__() 
-        self.image = pygame.image.load("images/rail.PNG")
+        self.rail_image = pygame.image.load("images/rail.PNG")
         #size_x, size_y = self.image.get_size()
         #self.image = pygame.transform.scale(self.image, (WIDTH, size_y))  # TODO: Don't know how to scale up an image like a texture...
-        self.rect = self.image.get_rect()
+        self.rect = self.rail_image.get_rect()
         self.rect.bottomleft=(0,RAIL_TOP_Y)  # Typically the center() recommended
 
         # Drawing Rectangle
         self.station = pygame.Surface((math.floor(WIDTH/3), math.floor(HEIGHT/4)))
         self.station.fill(GREY)
 
+        # Bottom rail
+        self.rail_rect_bot = self.rail_image.get_rect()
+        self.rail_rect_bot.topleft=(0,HEIGHT-RAIL_TOP_Y)  # Typically the center() recommended
+
     def draw(self, surface):
-        surface.blit(self.image, self.rect) 
+        surface.blit(self.rail_image, self.rect) 
         surface.blit(self.station, (math.floor(WIDTH/3), math.floor(HEIGHT/3)))
+        surface.blit(self.rail_image, self.rail_rect_bot) 
 
 
 # images/train_car.PNG

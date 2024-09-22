@@ -41,6 +41,9 @@ TRAIN_MOVE_UPPER_Y = 40  # Because the 'rail' image
 TRAIN_SPEED_X = 5
 HIDE_X = -1000
 HIDE_Y = -1000
+POS_STATION_X_LEFT = math.floor(WIDTH/3)
+POS_STATION_X_RIGHT = math.floor(2 * WIDTH/3)
+STOP_TIME_SEC = 20 * FPS
 
 CONFIG_GAME_NAME = "Vonatos"
 
@@ -96,18 +99,42 @@ class Train(pygame.sprite.Sprite):
         self.image = pygame.image.load("images/locomotive.PNG")
         self.rect = self.image.get_rect()
         if pos == TrainPosition.TOP:
-            pos_y = RAIL_TOP_Y - TRAIN_MOVE_UPPER_Y
+            pos_x = WIDTH - 2
+            pos_y = RAIL_TOP_Y - TRAIN_MOVE_UPPER_Y  # TODO: Better calculation?
         elif pos == TrainPosition.BOTTOM:
-            pos_y = math.floor((HEIGHT/4)*3)
-        self.rect.bottomleft=(0, pos_y)
+            pos_x = 0
+            pos_y = math.floor((HEIGHT/4)*3)  # TODO: Better calculation?
+        self.rect.bottomleft=(pos_x, pos_y)
         self.size_x, self.size_y = self.image.get_size()
+        self.stop_time = 0
 
     def move(self):
-        # Move
+        # Move + Always stop
         if self.dir == TrainDirection.LEFT:
-            self.rect.move_ip(-TRAIN_SPEED_X, 0)
+            if self.rect.left > POS_STATION_X_RIGHT:
+                speed = -TRAIN_SPEED_X
+            elif POS_STATION_X_LEFT <= self.rect.left <= POS_STATION_X_RIGHT:
+                speed = -1 * math.floor(TRAIN_SPEED_X/2)
+            elif self.rect.left < POS_STATION_X_LEFT:
+                speed = 0
+                self.stop_time += 1
+                if self.stop_time > STOP_TIME_SEC:
+                    speed = -TRAIN_SPEED_X
+            else:
+                speed = -TRAIN_SPEED_X
         elif self.dir == TrainDirection.RIGHT:
-            self.rect.move_ip(TRAIN_SPEED_X, 0)
+            if self.rect.right < POS_STATION_X_LEFT:
+                speed = TRAIN_SPEED_X
+            elif POS_STATION_X_LEFT <= self.rect.right <= POS_STATION_X_RIGHT:
+                speed = math.floor(TRAIN_SPEED_X/2)
+            elif self.rect.right > POS_STATION_X_RIGHT:
+                speed = 0
+                self.stop_time += 1
+                if self.stop_time > STOP_TIME_SEC:
+                    speed = TRAIN_SPEED_X
+            else:
+                speed = TRAIN_SPEED_X
+        self.rect.move_ip(speed, 0)
         # Check if outside of screen
         if (self.rect.right > WIDTH + self.size_x):
             self.rect.top = HIDE_Y
@@ -121,11 +148,13 @@ class Train(pygame.sprite.Sprite):
 
     def re_create(self):
         self.rect.bottomleft = (0, RAIL_TOP_Y - TRAIN_MOVE_UPPER_Y)
+        self.stop_time = 0
 
 
 background = Background()
 train_top = Train(TrainPosition.TOP, TrainDirection.LEFT)
 train_bottom = Train(TrainPosition.BOTTOM, TrainDirection.RIGHT)
+
 
 def quit():
     pygame.quit()
@@ -146,11 +175,12 @@ while True:
     if pressed_keys[K_RIGHT]:
         train_top.re_create()
 
-    # Normal things
+    # Moves / refresh
     background.update()
     train_top.move()
     train_bottom.move()
 
+    # Display / pygame administration
     DISPLAYSURF.fill(DARK_GREY)
     background.draw(DISPLAYSURF)
     train_top.draw(DISPLAYSURF)

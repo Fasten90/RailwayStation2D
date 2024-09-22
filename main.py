@@ -4,6 +4,7 @@ from pygame.locals import *
 import sys
 import random
 import math
+from enum import Enum
 
 
 pygame.init()
@@ -42,6 +43,11 @@ HIDE_X = -1000
 HIDE_Y = -1000
 
 CONFIG_GAME_NAME = "Vonatos"
+
+class TrainPosition(Enum):
+    TOP = 1
+    BOTTOM = 2
+
  
 FramePerSec = pygame.time.Clock()
  
@@ -81,11 +87,15 @@ class Background(pygame.sprite.Sprite):
 
 # images/train_car.PNG
 class Train(pygame.sprite.Sprite):
-    def __init__(self):
+    def __init__(self, pos=TrainPosition.TOP):
         super().__init__() 
         self.image = pygame.image.load("images/locomotive.PNG")
         self.rect = self.image.get_rect()
-        self.rect.bottomleft=(0, RAIL_TOP_Y - TRAIN_MOVE_UPPER_Y)
+        if pos == TrainPosition.TOP:
+            pos_y = RAIL_TOP_Y - TRAIN_MOVE_UPPER_Y
+        elif pos == TrainPosition.BOTTOM:
+            pos_y = math.floor((HEIGHT/4)*3)
+        self.rect.bottomleft=(0, pos_y)
         self.size_x, self.size_y = self.image.get_size()
 
     def move(self):
@@ -101,29 +111,12 @@ class Train(pygame.sprite.Sprite):
         surface.blit(self.image, self.rect) 
 
     def re_create(self):
-        #self.rect.top = 0
-        self.rect.bottomleft =(0, RAIL_TOP_Y - TRAIN_MOVE_UPPER_Y)
-
-
-# random.randint(30, 370)
-
-#   def update(self):
-#        pressed_keys = pygame.key.get_pressed()
-#       #if pressed_keys[K_UP]:
-#            #self.rect.move_ip(0, -5)
-#       #if pressed_keys[K_DOWN]:
-#            #self.rect.move_ip(0,5)
-#
-#        if self.rect.left > 0:
-#              if pressed_keys[K_LEFT]:
-#                  self.rect.move_ip(-5, 0)
-#        if self.rect.right < SCREEN_WIDTH:
-#              if pressed_keys[K_RIGHT]:
-#                  self.rect.move_ip(5, 0)
+        self.rect.bottomleft = (0, RAIL_TOP_Y - TRAIN_MOVE_UPPER_Y)
 
 
 background = Background()
-train_top = Train()
+train_top = Train(TrainPosition.TOP)
+train_bottom = Train(TrainPosition.BOTTOM)
 
 def quit():
     pygame.quit()
@@ -147,10 +140,12 @@ while True:
     # Normal things
     background.update()
     train_top.move()
+    train_bottom.move()
 
     DISPLAYSURF.fill(DARK_GREY)
     background.draw(DISPLAYSURF)
     train_top.draw(DISPLAYSURF)
+    train_bottom.draw(DISPLAYSURF)
 
     pygame.display.update()
     FramePerSec.tick(FPS)

@@ -48,9 +48,12 @@ class TrainPosition(Enum):
     TOP = 1
     BOTTOM = 2
 
- 
+class TrainDirection(Enum):
+    RIGHT = 1
+    LEFT = 2
+
 FramePerSec = pygame.time.Clock()
- 
+
 if IS_FULL_SCREEN:
     DISPLAYSURF = pygame.display.set_mode((0,0),pygame.FULLSCREEN)
 else:
@@ -87,8 +90,9 @@ class Background(pygame.sprite.Sprite):
 
 # images/train_car.PNG
 class Train(pygame.sprite.Sprite):
-    def __init__(self, pos=TrainPosition.TOP):
+    def __init__(self, pos=TrainPosition.TOP, direction=TrainDirection.LEFT):
         super().__init__() 
+        self.dir = direction
         self.image = pygame.image.load("images/locomotive.PNG")
         self.rect = self.image.get_rect()
         if pos == TrainPosition.TOP:
@@ -99,7 +103,12 @@ class Train(pygame.sprite.Sprite):
         self.size_x, self.size_y = self.image.get_size()
 
     def move(self):
-        self.rect.move_ip(TRAIN_SPEED_X, 0)
+        # Move
+        if self.dir == TrainDirection.LEFT:
+            self.rect.move_ip(-TRAIN_SPEED_X, 0)
+        elif self.dir == TrainDirection.RIGHT:
+            self.rect.move_ip(TRAIN_SPEED_X, 0)
+        # Check if outside of screen
         if (self.rect.right > WIDTH + self.size_x):
             self.rect.top = HIDE_Y
             self.rect.center = (HIDE_X, HIDE_Y)
@@ -115,8 +124,8 @@ class Train(pygame.sprite.Sprite):
 
 
 background = Background()
-train_top = Train(TrainPosition.TOP)
-train_bottom = Train(TrainPosition.BOTTOM)
+train_top = Train(TrainPosition.TOP, TrainDirection.LEFT)
+train_bottom = Train(TrainPosition.BOTTOM, TrainDirection.RIGHT)
 
 def quit():
     pygame.quit()

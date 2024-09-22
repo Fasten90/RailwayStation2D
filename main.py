@@ -99,12 +99,12 @@ class Train(pygame.sprite.Sprite):
         self.image = pygame.image.load("images/locomotive.PNG")
         self.rect = self.image.get_rect()
         if pos == TrainPosition.TOP:
-            pos_x = WIDTH - 2
-            pos_y = RAIL_TOP_Y - TRAIN_MOVE_UPPER_Y  # TODO: Better calculation?
+            self.start_pos_x = WIDTH - 2
+            self.start_pos_y = RAIL_TOP_Y - TRAIN_MOVE_UPPER_Y  # TODO: Better calculation?
         elif pos == TrainPosition.BOTTOM:
-            pos_x = 0
-            pos_y = math.floor((HEIGHT/4)*3)  # TODO: Better calculation?
-        self.rect.bottomleft=(pos_x, pos_y)
+            self.start_pos_x = 0
+            self.start_pos_y = math.floor((HEIGHT/4)*3)  # TODO: Better calculation?
+        self.rect.bottomleft = (self.start_pos_x, self.start_pos_y)
         self.size_x, self.size_y = self.image.get_size()
         self.stop_time = 0
 
@@ -147,7 +147,7 @@ class Train(pygame.sprite.Sprite):
         surface.blit(self.image, self.rect) 
 
     def re_create(self):
-        self.rect.bottomleft = (0, RAIL_TOP_Y - TRAIN_MOVE_UPPER_Y)
+        self.rect.bottomleft = (self.start_pos_x, self.start_pos_y)
         self.stop_time = 0
 
 
@@ -174,6 +174,7 @@ while True:
     # Cheats
     if pressed_keys[K_RIGHT]:
         train_top.re_create()
+        train_bottom.re_create()
 
     # Moves / refresh
     background.update()

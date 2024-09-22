@@ -91,13 +91,13 @@ class Background(pygame.sprite.Sprite):
         surface.blit(self.rail_image, self.rail_rect_bot) 
 
 
-# images/train_car.PNG
 class Train(pygame.sprite.Sprite):
     def __init__(self, pos=TrainPosition.TOP, direction=TrainDirection.LEFT):
         super().__init__() 
         self.dir = direction
-        self.image = pygame.image.load("images/locomotive.PNG")
-        self.rect = self.image.get_rect()
+        self.img_locomotive = pygame.image.load("images/locomotive.PNG")
+        self.img_traincar = pygame.image.load("images/train_car.PNG")
+        self.rect = self.img_locomotive.get_rect()
         if pos == TrainPosition.TOP:
             self.start_pos_x = WIDTH - 2
             self.start_pos_y = RAIL_TOP_Y - TRAIN_MOVE_UPPER_Y  # TODO: Better calculation?
@@ -105,7 +105,7 @@ class Train(pygame.sprite.Sprite):
             self.start_pos_x = 0
             self.start_pos_y = math.floor((HEIGHT/4)*3)  # TODO: Better calculation?
         self.rect.bottomleft = (self.start_pos_x, self.start_pos_y)
-        self.size_x, self.size_y = self.image.get_size()
+        self.size_x, self.size_y = self.img_locomotive.get_size()
         self.stop_time = 0
 
     def move(self):
@@ -137,14 +137,16 @@ class Train(pygame.sprite.Sprite):
         self.rect.move_ip(speed, 0)
         # Check if outside of screen
         if (self.rect.right > WIDTH + self.size_x):
-            self.rect.top = HIDE_Y
-            self.rect.center = (HIDE_X, HIDE_Y)
+            self.hide()
         elif (self.rect.left < 0 - self.size_x):
-            self.rect.top = HIDE_Y
-            self.rect.center = (HIDE_X, HIDE_Y)
+            self.hide()
 
     def draw(self, surface):
-        surface.blit(self.image, self.rect) 
+        surface.blit(self.img_locomotive, self.rect) 
+
+    def hide(self):
+        self.rect.top = HIDE_Y
+        self.rect.center = (HIDE_X, HIDE_Y)
 
     def re_create(self):
         self.rect.bottomleft = (self.start_pos_x, self.start_pos_y)

@@ -31,6 +31,7 @@ RED   = (255, 0, 0)
 GREEN = (0, 255, 0)
 BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
+GREY = (128, 128, 128)
 DARK_GREY = (50, 50, 50)
 
 
@@ -55,12 +56,6 @@ DISPLAYSURF.fill(DARK_GREY)
 pygame.display.set_caption(CONFIG_GAME_NAME)
 
 
-color1 = pygame.Color(0, 0, 0)         # Black
-color2 = pygame.Color(255, 255, 255)   # White
-color3 = pygame.Color(128, 128, 128)   # Grey
-color4 = pygame.Color(255, 0, 0)       # Red
-
-
 class Background(pygame.sprite.Sprite):
     def __init__(self):
         super().__init__() 
@@ -70,8 +65,13 @@ class Background(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.bottomleft=(0,RAIL_TOP_Y)  # Typically the center() recommended
 
+        # Drawing Rectangle
+        self.station = pygame.Surface((math.floor(WIDTH/3), math.floor(HEIGHT/4)))
+        self.station.fill(GREY)
+
     def draw(self, surface):
         surface.blit(self.image, self.rect) 
+        surface.blit(self.station, (math.floor(WIDTH/3), math.floor(HEIGHT/3)))
 
 
 # images/train_car.PNG

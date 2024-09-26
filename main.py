@@ -5,12 +5,16 @@ import sys
 import random
 import math
 from enum import Enum
+import csv
+import datetime
 
 
 pygame.init()
 vec = pygame.math.Vector2  # 2 for two dimensional
 
 infoObject = pygame.display.Info()
+
+DEBUG = True
 
 IS_FULL_SCREEN = True
 if IS_FULL_SCREEN:
@@ -163,6 +167,48 @@ def quit():
     sys.exit()
 
 
+def read_config():
+    timetable_list = []
+    with open('timetable.csv', newline='') as csvfile:
+        reader = csv.DictReader(csvfile)
+        for row in reader:
+            # Update some elements of the dictionary
+            row['time'] = datetime.datetime.strptime(row['time'], '%H:%M')  # Convert - expected format: 21:16
+            row['line']  = row['line'].strip()
+            row['name']  = row['name'].strip()
+            row['arrived'] = False  # Sign as not arrived
+            timetable_list.append(row)
+    return timetable_list
+
+
+def check_timetable(time_table_list):
+    now = datetime.datetime.now()
+    for time_item in time_table_list:
+        if now.hour == time_item['time'].hour and now.minute == time_item['time'].minute:
+            # Arriving!
+            if time_item['arrived'] == False:
+                time_item['arrived'] = True
+                # TODO: Hardcoded lines - train objects!!!
+                print(f'{time_item["name"]} is coming on the line {time_item["line"]} at {time_item["time"].hour}:{time_item["time"].minute}')
+                if time_item['line'] == '1':
+                    train_top.re_create()
+                elif time_item['line'] == '2':
+                    train_bottom.re_create()
+                else:
+                    print('[ERROR] Wrong train line!')
+            else:
+                # It was signed as arrived. Maybe it is on the screen :)
+                pass
+        else:
+            # Unfortunately, that is a bad time! See you next time!
+            pass
+
+
+time_config = read_config()
+if DEBUG:
+    print(time_config)
+
+
 # Game loop begins
 while True:
     # Check events
@@ -177,6 +223,9 @@ while True:
     if pressed_keys[K_RIGHT]:
         train_top.re_create()
         train_bottom.re_create()
+
+    # Timetable
+    check_timetable(time_config)
 
     # Moves / refresh
     background.update()

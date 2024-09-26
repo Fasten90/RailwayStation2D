@@ -4,12 +4,18 @@ from pygame.locals import *
 import sys
 import random
 import math
+from enum import Enum
+import csv
+import datetime
+import time
 
 
 pygame.init()
 vec = pygame.math.Vector2  # 2 for two dimensional
 
 infoObject = pygame.display.Info()
+
+DEBUG = True
 
 IS_FULL_SCREEN = True
 if IS_FULL_SCREEN:
@@ -23,7 +29,7 @@ SCREEN_WIDTH = WIDTH
 
 ACC = 0.5
 FRIC = -0.12
-FPS = 60
+FPS = 30
 
 # Predefined some colors
 BLUE  = (0, 0, 255)
@@ -31,6 +37,7 @@ RED   = (255, 0, 0)
 GREEN = (0, 255, 0)
 BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
+GREY = (128, 128, 128)
 DARK_GREY = (50, 50, 50)
 
 
@@ -39,11 +46,22 @@ TRAIN_MOVE_UPPER_Y = 40  # Because the 'rail' image
 TRAIN_SPEED_X = 5
 HIDE_X = -1000
 HIDE_Y = -1000
+POS_STATION_X_LEFT = math.floor(WIDTH/3)
+POS_STATION_X_RIGHT = math.floor(2 * WIDTH/3)
+STOP_TIME_SEC = 20 * FPS
 
 CONFIG_GAME_NAME = "Vonatos"
- 
+
+class TrainPosition(Enum):
+    TOP = 1
+    BOTTOM = 2
+
+class TrainDirection(Enum):
+    RIGHT = 1
+    LEFT = 2
+
 FramePerSec = pygame.time.Clock()
- 
+
 if IS_FULL_SCREEN:
     DISPLAYSURF = pygame.display.set_mode((0,0),pygame.FULLSCREEN)
 else:
@@ -55,74 +73,144 @@ DISPLAYSURF.fill(DARK_GREY)
 pygame.display.set_caption(CONFIG_GAME_NAME)
 
 
-color1 = pygame.Color(0, 0, 0)         # Black
-color2 = pygame.Color(255, 255, 255)   # White
-color3 = pygame.Color(128, 128, 128)   # Grey
-color4 = pygame.Color(255, 0, 0)       # Red
-
-
 class Background(pygame.sprite.Sprite):
     def __init__(self):
         super().__init__() 
-        self.image = pygame.image.load("images/rail.PNG")
+        self.rail_image = pygame.image.load("images/rail.PNG")
         #size_x, size_y = self.image.get_size()
         #self.image = pygame.transform.scale(self.image, (WIDTH, size_y))  # TODO: Don't know how to scale up an image like a texture...
-        self.rect = self.image.get_rect()
+        self.rect = self.rail_image.get_rect()
         self.rect.bottomleft=(0,RAIL_TOP_Y)  # Typically the center() recommended
 
+        # Drawing Rectangle
+        self.station = pygame.Surface((math.floor(WIDTH/3), math.floor(HEIGHT/4)))
+        self.station.fill(GREY)
+
+        # Bottom rail
+        self.rail_rect_bot = self.rail_image.get_rect()
+        self.rail_rect_bot.topleft=(0,HEIGHT-RAIL_TOP_Y)  # Typically the center() recommended
+
     def draw(self, surface):
-        surface.blit(self.image, self.rect) 
+        surface.blit(self.rail_image, self.rect) 
+        surface.blit(self.station, (math.floor(WIDTH/3), math.floor(HEIGHT/3)))
+        surface.blit(self.rail_image, self.rail_rect_bot) 
 
 
-# images/train_car.PNG
 class Train(pygame.sprite.Sprite):
-    def __init__(self):
+    def __init__(self, pos=TrainPosition.TOP, direction=TrainDirection.LEFT):
         super().__init__() 
-        self.image = pygame.image.load("images/locomotive.PNG")
-        self.rect = self.image.get_rect()
-        self.rect.bottomleft=(0, RAIL_TOP_Y - TRAIN_MOVE_UPPER_Y)
-        self.size_x, self.size_y = self.image.get_size()
+        self.dir = direction
+        self.img_locomotive = pygame.image.load("images/locomotive.PNG")
+        self.img_traincar = pygame.image.load("images/train_car.PNG")
+        self.rect = self.img_locomotive.get_rect()
+        if pos == TrainPosition.TOP:
+            self.start_pos_x = WIDTH - 2
+            self.start_pos_y = RAIL_TOP_Y - TRAIN_MOVE_UPPER_Y  # TODO: Better calculation?
+        elif pos == TrainPosition.BOTTOM:
+            self.start_pos_x = 0
+            self.start_pos_y = math.floor((HEIGHT/4)*3)  # TODO: Better calculation?
+        self.rect.bottomleft = (self.start_pos_x, self.start_pos_y)
+        self.size_x, self.size_y = self.img_locomotive.get_size()
+        self.stop_time = 0
+        self.is_on_screen = True
 
     def move(self):
-        self.rect.move_ip(TRAIN_SPEED_X, 0)
+        # Move + Always stop
+        if self.dir == TrainDirection.LEFT:
+            if self.rect.left > POS_STATION_X_RIGHT:
+                speed = -TRAIN_SPEED_X
+            elif POS_STATION_X_LEFT <= self.rect.left <= POS_STATION_X_RIGHT:
+                speed = -1 * math.floor(TRAIN_SPEED_X/2)
+            elif self.rect.left < POS_STATION_X_LEFT:
+                speed = 0
+                self.stop_time += 1
+                if self.stop_time > STOP_TIME_SEC:
+                    speed = -TRAIN_SPEED_X
+            else:
+                speed = -TRAIN_SPEED_X
+        elif self.dir == TrainDirection.RIGHT:
+            if self.rect.right < POS_STATION_X_LEFT:
+                speed = TRAIN_SPEED_X
+            elif POS_STATION_X_LEFT <= self.rect.right <= POS_STATION_X_RIGHT:
+                speed = math.floor(TRAIN_SPEED_X/2)
+            elif self.rect.right > POS_STATION_X_RIGHT:
+                speed = 0
+                self.stop_time += 1
+                if self.stop_time > STOP_TIME_SEC:
+                    speed = TRAIN_SPEED_X
+            else:
+                speed = TRAIN_SPEED_X
+        self.rect.move_ip(speed, 0)
+        # Check if outside of screen
         if (self.rect.right > WIDTH + self.size_x):
-            self.rect.top = HIDE_Y
-            self.rect.center = (HIDE_X, HIDE_Y)
+            self.hide()
         elif (self.rect.left < 0 - self.size_x):
-            self.rect.top = HIDE_Y
-            self.rect.center = (HIDE_X, HIDE_Y)
+            self.hide()
 
     def draw(self, surface):
-        surface.blit(self.image, self.rect) 
+        surface.blit(self.img_locomotive, self.rect) 
+
+    def hide(self):
+        self.rect.top = HIDE_Y
+        self.rect.center = (HIDE_X, HIDE_Y)
+        self.is_on_screen = False
 
     def re_create(self):
-        #self.rect.top = 0
-        self.rect.bottomleft =(0, RAIL_TOP_Y - TRAIN_MOVE_UPPER_Y)
-
-
-# random.randint(30, 370)
-
-#   def update(self):
-#        pressed_keys = pygame.key.get_pressed()
-#       #if pressed_keys[K_UP]:
-#            #self.rect.move_ip(0, -5)
-#       #if pressed_keys[K_DOWN]:
-#            #self.rect.move_ip(0,5)
-#
-#        if self.rect.left > 0:
-#              if pressed_keys[K_LEFT]:
-#                  self.rect.move_ip(-5, 0)
-#        if self.rect.right < SCREEN_WIDTH:
-#              if pressed_keys[K_RIGHT]:
-#                  self.rect.move_ip(5, 0)
+        self.rect.bottomleft = (self.start_pos_x, self.start_pos_y)
+        self.stop_time = 0
+        self.is_on_screen = True
 
 
 background = Background()
-train_top = Train()
+train_top = Train(TrainPosition.TOP, TrainDirection.LEFT)
+train_bottom = Train(TrainPosition.BOTTOM, TrainDirection.RIGHT)
+
 
 def quit():
     pygame.quit()
     sys.exit()
+
+
+def read_config():
+    timetable_list = []
+    with open('timetable.csv', newline='') as csvfile:
+        reader = csv.DictReader(csvfile)
+        for row in reader:
+            # Update some elements of the dictionary
+            row['time'] = datetime.datetime.strptime(row['time'], '%H:%M')  # Convert - expected format: 21:16
+            row['line']  = row['line'].strip()
+            row['name']  = row['name'].strip()
+            row['arrived'] = False  # Sign as not arrived
+            timetable_list.append(row)
+    return timetable_list
+
+
+def check_timetable(time_table_list):
+    now = datetime.datetime.now()
+    for time_item in time_table_list:
+        if now.hour == time_item['time'].hour and now.minute == time_item['time'].minute:
+            # Arriving!
+            if time_item['arrived'] == False:
+                time_item['arrived'] = True
+                # TODO: Hardcoded lines - train objects!!!
+                print(f'{time_item["name"]} is coming on the line {time_item["line"]} at {time_item["time"].hour}:{time_item["time"].minute}')
+                if time_item['line'] == '1':
+                    train_top.re_create()
+                elif time_item['line'] == '2':
+                    train_bottom.re_create()
+                else:
+                    print('[ERROR] Wrong train line!')
+            else:
+                # It was signed as arrived. Maybe it is on the screen :)
+                pass
+        else:
+            # Unfortunately, that is a bad time! See you next time!
+            pass
+
+
+time_config = read_config()
+if DEBUG:
+    print(time_config)
 
 
 # Game loop begins
@@ -138,15 +226,26 @@ while True:
     # Cheats
     if pressed_keys[K_RIGHT]:
         train_top.re_create()
+        train_bottom.re_create()
 
-    # Normal things
-    background.update()
-    train_top.move()
+    # Timetable
+    check_timetable(time_config)
 
-    DISPLAYSURF.fill(DARK_GREY)
-    background.draw(DISPLAYSURF)
-    train_top.draw(DISPLAYSURF)
+    # Check if somethings should be on the screen
+    if train_top.is_on_screen or train_bottom.is_on_screen:
+        # Moves / refresh
+        background.update()
+        train_top.move()
+        train_bottom.move()
 
-    pygame.display.update()
-    FramePerSec.tick(FPS)
+        # Display / pygame administration
+        DISPLAYSURF.fill(DARK_GREY)
+        background.draw(DISPLAYSURF)
+        train_top.draw(DISPLAYSURF)
+        train_bottom.draw(DISPLAYSURF)
+
+        pygame.display.update()
+        FramePerSec.tick(FPS)
+    else:
+        time.sleep(1)  # Sleep 1 second
 

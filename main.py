@@ -7,6 +7,7 @@ import math
 from enum import Enum
 import csv
 import datetime
+import time
 
 
 pygame.init()
@@ -28,7 +29,7 @@ SCREEN_WIDTH = WIDTH
 
 ACC = 0.5
 FRIC = -0.12
-FPS = 60
+FPS = 30
 
 # Predefined some colors
 BLUE  = (0, 0, 255)
@@ -111,6 +112,7 @@ class Train(pygame.sprite.Sprite):
         self.rect.bottomleft = (self.start_pos_x, self.start_pos_y)
         self.size_x, self.size_y = self.img_locomotive.get_size()
         self.stop_time = 0
+        self.is_on_screen = True
 
     def move(self):
         # Move + Always stop
@@ -151,10 +153,12 @@ class Train(pygame.sprite.Sprite):
     def hide(self):
         self.rect.top = HIDE_Y
         self.rect.center = (HIDE_X, HIDE_Y)
+        self.is_on_screen = False
 
     def re_create(self):
         self.rect.bottomleft = (self.start_pos_x, self.start_pos_y)
         self.stop_time = 0
+        self.is_on_screen = True
 
 
 background = Background()
@@ -227,17 +231,21 @@ while True:
     # Timetable
     check_timetable(time_config)
 
-    # Moves / refresh
-    background.update()
-    train_top.move()
-    train_bottom.move()
+    # Check if somethings should be on the screen
+    if train_top.is_on_screen or train_bottom.is_on_screen:
+        # Moves / refresh
+        background.update()
+        train_top.move()
+        train_bottom.move()
 
-    # Display / pygame administration
-    DISPLAYSURF.fill(DARK_GREY)
-    background.draw(DISPLAYSURF)
-    train_top.draw(DISPLAYSURF)
-    train_bottom.draw(DISPLAYSURF)
+        # Display / pygame administration
+        DISPLAYSURF.fill(DARK_GREY)
+        background.draw(DISPLAYSURF)
+        train_top.draw(DISPLAYSURF)
+        train_bottom.draw(DISPLAYSURF)
 
-    pygame.display.update()
-    FramePerSec.tick(FPS)
+        pygame.display.update()
+        FramePerSec.tick(FPS)
+    else:
+        time.sleep(1)  # Sleep 1 second
 
